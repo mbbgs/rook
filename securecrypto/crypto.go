@@ -46,7 +46,7 @@ func HashWithSalt(password, salt string) (string, error) {
 
 
 func VerifyPassword(inputPassword string, hashedPassword string,salt []byte) bool {
-	hashedInput, err := HashWithSalt(inputPassword, []byte(salt))
+	hashedInput, err := HashWithSalt(inputPassword, string(salt))
 	if err != nil {
 		return false
 	}

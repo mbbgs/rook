@@ -30,7 +30,7 @@ func FromUser(user *User) User {
 	return *user
 }
 
-func (user *User) IsMaster(computedMasterHash string) {
+func (user *User) IsMaster(computedMasterHash string) bool {
 	return bytes.Equal([]byte(user.masterKey),[]byte(computedMasterHash))
 }
 

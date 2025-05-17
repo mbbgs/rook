@@ -29,9 +29,9 @@ func InitLogger() error {
 	var err error
 	path := filepath.Join(dir,consts.ROOK_LOG)
 	
-	logFile, err = os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
+	logFile, lerr = os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if lerr != nil {
+		return lerr
 	}
 	log.SetOutput(logFile)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)

@@ -10,16 +10,20 @@ import (
     "time"
 
     "github.com/mbbgs/rook/consts"
+    "github.com/mbbgs/rook/store"
+    "github.com/mbbgs/rook/models"
     "github.com/mbbgs/rook/types"
     "github.com/mbbgs/rook/utils"
 )
 
 type Dashboard struct {
-    store *types.Store
-    user  *types.User
+    store *store.Store
+    user  *models.User
 }
 
-func NewDashboard(store *types.Store, user *types.User) *Dashboard {
+func NewDashboard(store any, user any) *Dashboard {
+    user := user.(*models.User)
+    store := store.(*store.Store)
     return &Dashboard{store: store, user: user}
 }
 
@@ -158,10 +162,6 @@ func (d *Dashboard) addData() {
         return
     }
 
-    if err := d.store.Save(); err != nil {
-        fmt.Println("Failed to save store:", err)
-        return
-    }
 
     fmt.Println("Data added successfully.")
 }
@@ -189,39 +189,37 @@ func (d *Dashboard) removeByLabel(label string) {
         return
     }
 
-    if err := d.store.Save(); err != nil {
-        fmt.Println("Failed to save store:", err)
-        return
-    }
-
     fmt.Println("Entry removed successfully.")
 }
-
 func (d *Dashboard) wipeStore() {
-    dir, err := utils.GetSessionDir()
-    if err != nil {
-        utils.ErrorE(err)
-        return
-    }
+	dir, err := utils.GetSessionDir()
+	if err != nil {
+		utils.ErrorE(err)
+		return
+	}
 
-    path := filepath.Join(dir, consts.STORE_FILE_PATH)
-    if err := os.Remove(path); err != nil {
-        utils.Error("Failed to wipe store: " + err.Error())
-        return
-    }
+	path := filepath.Join(dir, consts.STORE_FILE_PATH)
 
-    d.store = &types.Store{
-        Data:      make(map[types.Label]types.Data),
-        CreatedAt: time.Now(),
-        UpdatedAt: time.Now(),
-    }
+	// Close DB if open
+	if d.store != nil {
+		_ = d.store.Close()
+	}
 
-    if err := d.store.Save(); err != nil {
-        utils.Error("Failed to save empty store: " + err.Error())
-        return
-    }
+	// Remove BadgerDB directory
+	if err := os.RemoveAll(path); err != nil {
+		utils.Error("Failed to wipe store: " + err.Error())
+		return
+	}
 
-    utils.Done("Store wiped successfully.")
+	// Reinitialize empty store
+	newStore, err := store.NewStore()
+	if err != nil {
+		utils.Error("Failed to reinitialize store: " + err.Error())
+		return
+	}
+	d.store = newStore
+
+	utils.Done("Store wiped successfully.")
 }
 
 

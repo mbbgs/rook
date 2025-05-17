@@ -1,6 +1,9 @@
 package store
 
 import (
+	"os"
+	"time"
+	"fmt"
 	"encoding/json"
 	"errors"
 	"path/filepath"
@@ -38,22 +41,6 @@ func (s *Store) Close() error {
 }
 
 
-func (s *Store) Save() error {
-    dir, err := utils.GetSessionDir()
-    if err != nil {
-        return err
-    }
-    path := filepath.Join(dir, consts.STORE_FILE_PATH)
-
-    s.UpdatedAt = time.Now()
-
-    dataBytes, err := json.MarshalIndent(s, "", "  ")
-    if err != nil {
-        return err
-    }
-
-    return os.WriteFile(path, dataBytes, 0600)
-}
 
 
 func (s *Store) CreateUser(user *models.User) error {

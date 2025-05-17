@@ -20,13 +20,13 @@ func GetSessionDir() (string, error) {
     ROOK_DIR := ".rook"
     sessionDir := filepath.Join(cacheBase,ROOK_DIR)
 
-    err = os.MkdirAll(sessionDir, 0o600)
+    err = os.MkdirAll(sessionDir, 0o700)
     if err != nil {
         return "", err
     }
 
     // 0700 permission
-    err = os.Chmod(sessionDir, 0o600)
+    err = os.Chmod(sessionDir, 0o700)
     if err != nil {
         return "", err
     }

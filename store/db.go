@@ -1,8 +1,6 @@
 package store
 
 import (
-	"os"
-	"time"
 	"fmt"
 	"encoding/json"
 	"errors"
@@ -147,15 +145,24 @@ func (s *Store) RemoveFromStore(username string, label types.Label) error {
 }
 
 func (s *Store) CountForUser(username string) (int, error) {
+	prefix := []byte(username + "::")
 	count := 0
+
 	err := s.db.View(func(txn *badger.Txn) error {
-		return txn.Iterate(badger.DefaultIteratorOptions, func(item *badger.Item) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false // just for keys
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 			count++
-			return nil
-		})
+		}
+		return nil
 	})
+
 	return count, err
 }
+
 
 func (s *Store) GetAllForUser(username string) ([]types.Data, error) {
 	prefix := []byte(username + "::")

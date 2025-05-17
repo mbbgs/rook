@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"io"
 
@@ -47,7 +46,7 @@ func HashWithSalt(password, salt string) (string, error) {
 
 
 func VerifyPassword(inputPassword string, hashedPassword string,salt []byte) bool {
-	hashedInput, err := HashPassword(inputPassword, salt)
+	hashedInput, err := HashWithSalt(inputPassword, salt)
 	if err != nil {
 		return false
 	}

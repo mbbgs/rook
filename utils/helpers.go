@@ -9,7 +9,6 @@ import (
     "strings"
     "unicode"
     "math/big"
-    "github.com/mbbgs/rook/consts"
 )
 
 
@@ -18,8 +17,8 @@ func GetSessionDir() (string, error) {
     if err != nil {
         return "", err
     }
-
-    sessionDir := filepath.Join(cacheBase, consts.ROOK_DIR)
+    ROOK_DIR := ".rook"
+    sessionDir := filepath.Join(cacheBase,ROOK_DIR)
 
     err = os.MkdirAll(sessionDir, 0o600)
     if err != nil {

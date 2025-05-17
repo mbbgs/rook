@@ -1,3 +1,5 @@
+package securecrypto
+
 import (
 	"crypto/aes"
 	"crypto/cipher"

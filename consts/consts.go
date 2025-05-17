@@ -19,7 +19,6 @@ const (
   	
   	SECRET_ROOK     = ".secret.rook"
   	STORE_FILE_PATH = "storook"
-  	ROOK_DIR        = ".rook"
   	ATTEMPTS_PATH   = ".attempts.rook"
   	ROOK_LOG        = ".log.rook"
   

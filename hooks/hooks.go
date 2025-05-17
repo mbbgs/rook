@@ -9,7 +9,6 @@ import (
 	"github.com/mbbgs/rook/consts"
 	"github.com/mbbgs/rook/events"
 	"github.com/mbbgs/rook/terms"
-	"github.com/mbbgs/rook/user"
 	"github.com/mbbgs/rook/utils"
 	"github.com/mbbgs/rook/views"
 	"github.com/mbbgs/rook/store"
@@ -38,7 +37,7 @@ func SetupEventHandlers() {
 		utils.SilentDone(consts.APP_READY)
 		Event.Off(consts.APP_INIT)
 
-		exists, err := exists()
+		exists, err := store.Exists()
 		if err != nil {
 			utils.Error("Failed to check user existence: " + err.Error())
 			os.Exit(1)
@@ -88,10 +87,7 @@ func SetupEventHandlers() {
 		utils.SilentDone(consts.USER_LOGIN)
 		Event.Off(consts.USER_LOGIN)
 		
-		user := args[0].(*models.User)
-		store := args[1].(*store.Store)
-		
-		dash, err := views.NewDashboard(store,user)
+		dash, err := views.NewDashboard(args[0],args[1])
 		if err != nil {
 			utils.Error("Failed to init dashboard: " + err.Error())
 			return
@@ -135,29 +131,3 @@ func promptForPassword(prompt string) string {
 	return strings.TrimSpace(string(bytePassword))
 }
 
-func exists() (bool, error) {
-	s, err := store.NewStore()
-	if err != nil {
-		return false, err
-	}
-	defer s.Close()
-
-	var exists bool
-	err = s.db.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchValues = false
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		for it.Rewind(); it.Valid(); it.Next() {
-			key := it.Item().Key()
-			if bytes.HasPrefix(key, []byte("user:")) {
-				exists = true
-				break
-			}
-		}
-		return nil
-	})
-
-	return exists, err
-}

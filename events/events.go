@@ -12,7 +12,7 @@ type Event struct {
 
 func Emitter() *Event {
 	return &Event{
-		listeners: make(map[EventName]EventListener)
+		listeners: make(map[EventName]EventListener),
 	}
 }
 

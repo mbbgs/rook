@@ -9,7 +9,7 @@ import (
 )
 
 func NukeFiles() {
-    files := []string{consts.SECRET_ROOK, consts.AUTH_FILE_PATH, consts.STORE_FILE_PATH, consts.ATTEMPTS_PATH}
+    files := []string{consts.SECRET_ROOK, consts.STORE_FILE_PATH, consts.ATTEMPTS_PATH}
 
     for _, file := range files {
         if _, err := os.Stat(file); os.IsNotExist(err) {

@@ -21,13 +21,13 @@ var logFile *os.File
 
 // InitLogger should be called once in main()
 func InitLogger() error {
-	dir ,err := utils.GetSessionDir()
+	dir ,err := GetSessionDir()
 	if err != nil {
 		return err
 	}
 	
 	var err error
-	path := filepath.join(dir,consts.ROOK_LOG)
+	path := filepath.Join(dir,consts.ROOK_LOG)
 	
 	logFile, err = os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {

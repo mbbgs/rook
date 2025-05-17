@@ -1,13 +1,19 @@
 package dashboard
 
 import (
+    "bufio"
     "encoding/json"
     "fmt"
+    "os"
+    "path/filepath"
+    "strings"
     "time"
 
-    "yourmodule/models"
-    "yourmodule/store"
-    "yourmodule/types"
+    "github.com/mbbgs/rook/consts"
+    "github.com/mbbgs/rook/store"
+    "github.com/mbbgs/rook/models"
+    "github.com/mbbgs/rook/types"
+    "github.com/mbbgs/rook/utils"
 )
 
 type Dashboard struct {
@@ -16,13 +22,11 @@ type Dashboard struct {
 }
 
 func NewDashboard(store any, user any) *Dashboard {
-    s, ok1 := store.(*store.Store)
-    u, ok2 := user.(*models.User)
-    if !ok1 || !ok2 {
-        panic("Invalid types passed to NewDashboard")
-    }
-    return &Dashboard{store: s, user: u}
+    user := user.(*models.User)
+    store := store.(*store.Store)
+    return &Dashboard{store: store, user: user}
 }
+
 func (d *Dashboard) Start() {
     scanner := bufio.NewScanner(os.Stdin)
     cmdList()
@@ -96,36 +100,75 @@ func (d *Dashboard) printHelp() {
 
 func (d *Dashboard) listData() {
     found := false
-    allData, err := d.store.GetAllForUser(d.user.Username)
-    if err != nil {
-        fmt.Println("Failed to list data:", err)
-        return
-    }
-
-    for label, data := range allData {
+    for label, data := range d.store.Data {
+        if data.Owner != d.user.Username {
+            continue
+        }
+        found = true
         maskedPwd := maskPassword(data.Lpassword)
         fmt.Printf("[%s]\n  URL: %s\n  User: %s\n  Password: %s\n  Last Access: %s\n\n",
             label, data.Lurl, data.Lname, maskedPwd, data.LastAccess.Format(time.RFC1123))
-        found = true
     }
-
     if !found {
         fmt.Println("No saved entries for user", d.user.Username)
     }
 }
 
-func (d *Dashboard) addData(label string, data types.Data) {
-    err := d.store.AddToStore(d.user.Username, types.Label(label), data)
+func (d *Dashboard) addData() {
+    reader := bufio.NewReader(os.Stdin)
+
+    fmt.Print("Enter Label: ")
+    label, _ := reader.ReadString('\n')
+    label = strings.TrimSpace(label)
+    if label == "" {
+        fmt.Println("Label cannot be empty.")
+        return
+    }
+
+    fmt.Print("Enter Username/Email: ")
+    lname, _ := reader.ReadString('\n')
+    lname = strings.TrimSpace(lname)
+    if lname == "" {
+        fmt.Println("Username/Email cannot be empty.")
+        return
+    }
+
+    fmt.Print("Enter Password: ")
+    lpassword, _ := reader.ReadString('\n')
+    lpassword = strings.TrimSpace(lpassword)
+    if lpassword == "" {
+        fmt.Println("Password cannot be empty.")
+        return
+    }
+
+    fmt.Print("Enter URL (optional): ")
+    lurl, _ := reader.ReadString('\n')
+    lurl = strings.TrimSpace(lurl)
+    if lurl == "" {
+        lurl = "(Not Set)"
+    }
+
+    data := types.Data{
+        Lname:      lname,
+        Lpassword:  []byte(lpassword),
+        Lurl:       lurl,
+        Owner:      d.user.Username,
+        LastAccess: time.Now(),
+    }
+
+    err := d.store.AddToStore(types.Label(label), data)
     if err != nil {
         fmt.Println("Failed to add data:", err)
         return
     }
+
+
     fmt.Println("Data added successfully.")
 }
 
 func (d *Dashboard) getByLabel(label string) {
-    data, err := d.store.GetByLabel(d.user.Username, types.Label(label))
-    if err != nil {
+    data, ok := d.store.Data[types.Label(label)]
+    if !ok || data.Owner != d.user.Username {
         fmt.Println("No entry found for label:", label)
         return
     }
@@ -134,22 +177,20 @@ func (d *Dashboard) getByLabel(label string) {
 }
 
 func (d *Dashboard) removeByLabel(label string) {
-    err := d.store.RemoveFromStore(d.user.Username, types.Label(label))
+    data, ok := d.store.Data[types.Label(label)]
+    if !ok || data.Owner != d.user.Username {
+        fmt.Println("No entry found for label:", label)
+        return
+    }
+
+    err := d.store.RemoveFromStore(types.Label(label))
     if err != nil {
         fmt.Println("Failed to remove:", err)
         return
     }
+
     fmt.Println("Entry removed successfully.")
 }
-
-func maskPassword(pwd string) string {
-    if len(pwd) <= 4 {
-        return "****"
-    }
-    return pwd[:2] + "****" + pwd[len(pwd)-2:]
-}
-
-
 func (d *Dashboard) wipeStore() {
 	dir, err := utils.GetSessionDir()
 	if err != nil {
@@ -235,6 +276,16 @@ func (d *Dashboard) viewLogs() {
 	}
 	d.printRecentLogs(lines, count)
 }
+
+
+
+
+// maskPassword returns a string of asterisks equal to the password length
+func maskPassword(pwd []byte) string {
+    return strings.Repeat("*", len(pwd))
+}
+
+
 
 
 func cmdList() {

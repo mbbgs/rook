@@ -1,13 +1,16 @@
 package dashboard
 
 import (
+    "bufio"
     "encoding/json"
     "fmt"
     "time"
-
+    "strings"
+    "os"
     "github.com/mbbgs/rook/models"
     "github.com/mbbgs/rook/store"
     "github.com/mbbgs/rook/types"
+    "github.com/mbbgs/rook/utils"
 )
 
 type Dashboard struct {
@@ -103,7 +106,7 @@ func (d *Dashboard) listData() {
     }
 
     for label, data := range allData {
-        maskedPwd := maskPassword(data.Lpassword)
+        maskedPwd := maskPassword(string(data.Lpassword))
         fmt.Printf("[%s]\n  URL: %s\n  User: %s\n  Password: %s\n  Last Access: %s\n\n",
             label, data.Lurl, data.Lname, maskedPwd, data.LastAccess.Format(time.RFC1123))
         found = true
@@ -114,13 +117,59 @@ func (d *Dashboard) listData() {
     }
 }
 
-func (d *Dashboard) addData(label string, data types.Data) {
+func (d *Dashboard) addData() {
+    
+	var label, lname, lpassword, lurl string
+
+	fmt.Print("Enter Label: ")
+	fmt.Scanln(&label)
+	if label == "" {
+		fmt.Println("Label cannot be empty.")
+		return
+	}
+
+	fmt.Print("Enter Username/Email: ")
+	fmt.Scanln(&lname)
+	if lname == "" {
+		fmt.Println("Username/Email cannot be empty.")
+		return
+	}
+
+	fmt.Print("Enter Password: ")
+	fmt.Scanln(&lpassword)
+	if lpassword == "" {
+		fmt.Println("Password cannot be empty.")
+		return
+	}
+
+	fmt.Print("Enter URL (optional): ")
+	fmt.Scanln(&lurl)
+	if lurl == "" {
+		lurl = "(Not Set)"
+	}
+
+	data := types.Data{
+		Lname:     lname,
+		Lpassword: []byte(lpassword),
+		Lurl:      lurl,
+	}
+
+	err := d.store.AddToStore(d.user.Username, types.Label(label), data)
+	if err != nil {
+		fmt.Println("Failed to add data:", err)
+	} else {
+		fmt.Println("Data added successfully.")
+	}
+	
+    /***
     err := d.store.AddToStore(d.user.Username, types.Label(label), data)
     if err != nil {
         fmt.Println("Failed to add data:", err)
         return
     }
     fmt.Println("Data added successfully.")
+    ****/
+    
 }
 
 func (d *Dashboard) getByLabel(label string) {

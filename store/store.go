@@ -1,20 +1,22 @@
 package store
 
 import (
-    "encoding/json"
-    "errors"
+   "fmt"
+	"encoding/json"
+	"errors"
+	"path/filepath"
 
-    "github.com/dgraph-io/badger/v4"
-    "github.com/mbbgs/rook/types"
+	"github.com/dgraph-io/badger/v4"
+	"github.com/mbbgs/rook/consts"
+	"github.com/mbbgs/rook/models"
+	"github.com/mbbgs/rook/types"
+	"github.com/mbbgs/rook/utils"
 )
 
 type Store struct {
     db *badger.DB
 }
 
-func NewStore(db *badger.DB) *Store {
-    return &Store{db: db}
-}
 
 func NewStore() (*Store, error) {
 	dir, err := utils.GetSessionDir()

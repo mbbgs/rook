@@ -7,6 +7,9 @@ import (
     "time"
     "strings"
     "os"
+    "path/filepath"
+    
+    "github.com/mbbgs/rook/consts"
     "github.com/mbbgs/rook/models"
     "github.com/mbbgs/rook/store"
     "github.com/mbbgs/rook/types"
@@ -14,17 +17,17 @@ import (
 )
 
 type Dashboard struct {
-    store *store.Store
+    storage *store.Store
     user  *models.User
 }
 
-func NewDashboard(store any, user any) *Dashboard {
-    s, ok1 := store.(*store.Store)
+func NewDashboard(storee any, user any) *Dashboard {
+    s, ok1 := storee.(*store.Store)
     u, ok2 := user.(*models.User)
     if !ok1 || !ok2 {
         panic("Invalid types passed to NewDashboard")
     }
-    return &Dashboard{store: s, user: u}
+    return &Dashboard{storage: s, user: u}
 }
 func (d *Dashboard) Start() {
     scanner := bufio.NewScanner(os.Stdin)
@@ -99,7 +102,7 @@ func (d *Dashboard) printHelp() {
 
 func (d *Dashboard) listData() {
     found := false
-    allData, err := d.store.GetAllForUser(d.user.Username)
+    allData, err := d.storage.GetAllForUser(d.user.Username)
     if err != nil {
         fmt.Println("Failed to list data:", err)
         return
@@ -154,7 +157,7 @@ func (d *Dashboard) addData() {
 		Lurl:      lurl,
 	}
 
-	err := d.store.AddToStore(d.user.Username, types.Label(label), data)
+	err := d.storage.AddToStore(d.user.Username, types.Label(label), data)
 	if err != nil {
 		fmt.Println("Failed to add data:", err)
 	} else {
@@ -162,7 +165,7 @@ func (d *Dashboard) addData() {
 	}
 	
     /***
-    err := d.store.AddToStore(d.user.Username, types.Label(label), data)
+    err := d.storage.AddToStore(d.user.Username, types.Label(label), data)
     if err != nil {
         fmt.Println("Failed to add data:", err)
         return
@@ -173,7 +176,7 @@ func (d *Dashboard) addData() {
 }
 
 func (d *Dashboard) getByLabel(label string) {
-    data, err := d.store.GetByLabel(d.user.Username, types.Label(label))
+    data, err := d.storage.GetByLabel(d.user.Username, types.Label(label))
     if err != nil {
         fmt.Println("No entry found for label:", label)
         return
@@ -183,7 +186,7 @@ func (d *Dashboard) getByLabel(label string) {
 }
 
 func (d *Dashboard) removeByLabel(label string) {
-    err := d.store.RemoveFromStore(d.user.Username, types.Label(label))
+    err := d.storage.RemoveFromStore(d.user.Username, types.Label(label))
     if err != nil {
         fmt.Println("Failed to remove:", err)
         return
@@ -209,8 +212,8 @@ func (d *Dashboard) wipeStore() {
 	path := filepath.Join(dir, consts.STORE_FILE_PATH)
 
 	// Close DB if open
-	if d.store != nil {
-		_ = d.store.Close()
+	if d.storage != nil {
+		_ = d.storage.Close()
 	}
 
 	// Remove BadgerDB directory
@@ -225,7 +228,7 @@ func (d *Dashboard) wipeStore() {
 		utils.Error("Failed to reinitialize store: " + err.Error())
 		return
 	}
-	d.store = newStore
+	d.storage = newStore
 
 	utils.Done("Store wiped successfully.")
 }

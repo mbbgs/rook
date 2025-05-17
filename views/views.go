@@ -5,9 +5,9 @@ import (
     "fmt"
     "time"
 
-    "yourmodule/models"
-    "yourmodule/store"
-    "yourmodule/types"
+    "github.com/mbbgs/rook/models"
+    "github.com/mbbgs/rook/store"
+    "github.com/mbbgs/rook/types"
 )
 
 type Dashboard struct {

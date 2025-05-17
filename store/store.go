@@ -5,7 +5,7 @@ import (
     "errors"
 
     "github.com/dgraph-io/badger/v4"
-    "yourmodule/types"
+    "github.com/mbbgs/rook/types"
 )
 
 type Store struct {

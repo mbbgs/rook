@@ -9,7 +9,7 @@ import (
     "strings"
     "unicode"
     "math/big"
-    "github.com/mbbgs/rook-go/consts"
+    "github.com/mbbgs/rook/consts"
 )
 
 

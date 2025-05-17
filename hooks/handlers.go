@@ -8,13 +8,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mbbgs/rook-go/consts"
-	"github.com/mbbgs/rook-go/events"
-	"github.com/mbbgs/rook-go/models"
-	"github.com/mbbgs/rook-go/securecrypto"
-	"github.com/mbbgs/rook-go/store"
-	"github.com/mbbgs/rook-go/terms"
-	"github.com/mbbgs/rook-go/utils"
+	"github.com/mbbgs/rook/consts"
+	"github.com/mbbgs/rook/events"
+	"github.com/mbbgs/rook/models"
+	"github.com/mbbgs/rook/securecrypto"
+	"github.com/mbbgs/rook/store"
+	"github.com/mbbgs/rook/terms"
+	"github.com/mbbgs/rook/utils"
 )
 
 func UserRegistration(username, password, masterkey string, Event *events.Event) {

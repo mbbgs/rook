@@ -9,9 +9,9 @@ import (
     "strings"
     "time"
 
-    "github.com/mbbgs/rook-go/consts"
-    "github.com/mbbgs/rook-go/types"
-    "github.com/mbbgs/rook-go/utils"
+    "github.com/mbbgs/rook/consts"
+    "github.com/mbbgs/rook/types"
+    "github.com/mbbgs/rook/utils"
 )
 
 type Dashboard struct {

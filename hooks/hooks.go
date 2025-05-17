@@ -6,13 +6,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mbbgs/rook-go/consts"
-	"github.com/mbbgs/rook-go/events"
-	"github.com/mbbgs/rook-go/terms"
-	"github.com/mbbgs/rook-go/user"
-	"github.com/mbbgs/rook-go/utils"
-	"github.com/mbbgs/rook-go/views"
-	"github.com/mbbgs/rook-go/store"
+	"github.com/mbbgs/rook/consts"
+	"github.com/mbbgs/rook/events"
+	"github.com/mbbgs/rook/terms"
+	"github.com/mbbgs/rook/user"
+	"github.com/mbbgs/rook/utils"
+	"github.com/mbbgs/rook/views"
+	"github.com/mbbgs/rook/store"
 	"golang.org/x/crypto/ssh/terminal"
 )
 

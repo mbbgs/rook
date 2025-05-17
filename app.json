@@ -5,7 +5,7 @@
   "description": "A secure password vault that stores encrypted credentials using AES-GCM with integrity verification.",
   "author": "Mockingbugs (Dess)",
   "license": "MIT",
-  "repository": "https://github.com/mbbgs/rook-go",
+  "repository": "https://github.com/mbbgs/rook",
   "security": {
     "encryption": "AES-256-GCM",
     "integrity": "SHA-256 + salt"

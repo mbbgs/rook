@@ -5,7 +5,7 @@ import (
   "os"
   "math/rand"
   
-  "github.com/mbbgs/rook-go/consts"
+  "github.com/mbbgs/rook/consts"
 )
 
 func NukeFiles() {

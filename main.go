@@ -4,9 +4,9 @@ import (
 	"flag"
 	"os"
 	"fmt"
-	"github.com/mbbgs/rook-go/utils"
-	"github.com/mbbgs/rook-go/consts"
-	"github.com/mbbgs/rook-go/hooks"
+	"github.com/mbbgs/rook/utils"
+	"github.com/mbbgs/rook/consts"
+	"github.com/mbbgs/rook/hooks"
 )
 
 func main() {

@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mbbgs/rook-go/consts"
-	"github.com/mbbgs/rook-go/events"
-	"github.com/mbbgs/rook-go/terms"
-	"github.com/mbbgs/rook-go/utils"
-	"github.com/mbbgs/rook-go/views"
+	"github.com/mbbgs/rook/consts"
+	"github.com/mbbgs/rook/events"
+	"github.com/mbbgs/rook/terms"
+	"github.com/mbbgs/rook/utils"
+	"github.com/mbbgs/rook/views"
 	
 	
 	"golang.org/x/crypto/ssh/terminal"

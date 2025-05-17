@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/mbbgs/rook-go/consts"
+	"github.com/mbbgs/rook/consts"
 )
 
 func DisplayAgreement() {

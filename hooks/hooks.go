@@ -56,8 +56,8 @@ func SetupEventHandlers() {
 	Event.On(consts.APP_READY, func(_ ...interface{}) {
 	utils.SilentDone(consts.APP_READY)
 	Event.Off(consts.APP_INIT)
-
-	exists, err := store.IsUser()
+	loadStore := store.NewStore()
+	exists, err := loadStore.IsUser()
 	if err != nil {
 		utils.Error("Failed to check user existence: " + err.Error())
 		os.Exit(1)
@@ -93,14 +93,16 @@ func SetupEventHandlers() {
 	})
 
 	Event.On(consts.RESET_PASSWORD, func(_ ...interface{}) {
+		username := promptForPassword("Enter your username: ")
 		currPassword := promptForPassword("Enter your current password: ")
+	
 		newPassword := promptForPassword("Enter your new password: ")
-		ResetPassword(currPassword, newPassword, Event)
+		ResetPassword(username,currPassword, newPassword, Event)
 	})
 
 	Event.On(consts.DROP_TABLE, func(_ ...interface{}) {
 		username := strings.TrimSpace(Event.Username)
-		if username == nil {
+		if username == "" {
 			Event.Emit(consts.F_USER_LOGOUT,nil)
 			return
 		}
@@ -113,10 +115,10 @@ func SetupEventHandlers() {
 		Event.Off(consts.USER_LOGIN)
 		
 		dash, err := dashboard.NewDashboard(args[0],args[1])
-		if err != nil {
-			utils.Error("Failed to init dashboard: " + err.Error())
-			return
-		}
+		//	if err != nil {
+		//	utils.Error("Failed to init dashboard: " + err.Error())
+		//	return
+		//	}
 		dash.Start()
 	})
 	

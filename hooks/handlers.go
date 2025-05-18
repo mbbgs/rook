@@ -87,15 +87,19 @@ func UserLogin(username, password string, Event *events.Event) {
 		failAttempt("Failed to open database.", attemptPath, attempts)
 		return
 	}
-	user, err := db.GetUser(username)
+	user, err := db.GetUser()
 	if err != nil {
+		failAttempt("Invalid username or password.", attemptPath, attempts)
+		return
+	}
+	if user.Username != username {
 		failAttempt("Invalid username or password.", attemptPath, attempts)
 		return
 	}
 
 	storedHash, salt, ok := splitHashSalt(user.Password)
 	if !ok {
-		failAttempt("Invalid password format.", attemptPath, attempts)
+		failAttempt("Invalid username or password", attemptPath, attempts)
 		return
 	}
 
@@ -107,8 +111,7 @@ func UserLogin(username, password string, Event *events.Event) {
 
 	_ = os.Remove(attemptPath)
 	utils.Done("User logged in successfully.")
-	
-	Event.Username = username
+	Event.Username = us
 	Event.Emit(consts.USER_LOGGED_IN, &user, &db)
 }
 
@@ -131,9 +134,13 @@ func ResetPassword(username, oldPassword, newPassword string, Event *events.Even
 	}
 	defer db.Close()
 
-	user, err := db.GetUser(username)
+	user, err := db.GetUser()
 	if err != nil {
 		failAttempt("Invalid credentials.", attemptPath, attempts)
+		return
+	}
+	if user.Username != username {
+		failAttempt("Invalid username or password.", attemptPath, attempts)
 		return
 	}
 
@@ -195,12 +202,16 @@ func DropStorage(username, currentPassword string) {
 	}
 	defer db.Close()
 
-	user, err := db.GetUser(username)
+	user, err := db.GetUser()
 	if err != nil {
 		failAttempt("Authentication failed.", attemptPath, attempts)
 		return
 	}
-
+	
+	if user.Username != username {
+		failAttempt("Invalid username or password.", attemptPath, attempts)
+		return
+	}
 	storedHash, salt, ok := splitHashSalt(user.Password)
 	if !ok {
 		failAttempt("Stored password invalid.", attemptPath, attempts)

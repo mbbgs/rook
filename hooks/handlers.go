@@ -23,25 +23,25 @@ func UserRegistration(username, password, masterkey string, Event *events.Event)
 		return
 	}
 
-	salt, err := securecrypto.GenerateSalt(consts.SALT_SIZE)
+	salt, err := securecrypto.GenerateSalt()
 	if err != nil {
 		utils.ErrorE(err)
 		return
 	}
 
-	msalt, err := securecrypto.GenerateSalt(consts.SALT_SIZE)
+	msalt, err := securecrypto.GenerateSalt()
 	if err != nil {
 		utils.ErrorE(err)
 		return
 	}
 
-	_, hashedPassword, err := securecrypto.HashWithSalt(password, salt)
+	 hashedPassword, err := securecrypto.HashWithSalt(password, salt)
 	if err != nil {
 		utils.ErrorE(err)
 		return
 	}
 
-	_, hashedMaster, err := securecrypto.HashWithSalt(masterkey, msalt)
+	hashedMaster, err := securecrypto.HashWithSalt(masterkey, msalt)
 	if err != nil {
 		utils.ErrorE(err)
 		return
@@ -65,11 +65,7 @@ func UserRegistration(username, password, masterkey string, Event *events.Event)
 		return
 	}
 
-	if err := db.Save(); err != nil {
-		utils.ErrorE(err)
-		return
-	}
-
+	
 	Event.Emit(consts.USER_LOGIN, nil)
 }
 
@@ -103,7 +99,7 @@ func UserLogin(username, password string, Event *events.Event) {
 		return
 	}
 
-	_, inputHash, err := securecrypto.HashWithSalt(password, []byte(salt))
+	 inputHash, err := securecrypto.HashWithSalt(password,salt)
 	if err != nil || !bytes.Equal([]byte(storedHash), []byte(inputHash)) {
 		failAttempt("Invalid username or password.", attemptPath, attempts)
 		return
@@ -145,19 +141,19 @@ func ResetPassword(username, oldPassword, newPassword string, Event *events.Even
 		return
 	}
 
-	_, checkOld, err := securecrypto.HashWithSalt(oldPassword, []byte(oldSalt))
+	checkOld, err := securecrypto.HashWithSalt(oldPassword,oldSalt)
 	if err != nil || !bytes.Equal([]byte(oldHash), []byte(checkOld)) {
 		failAttempt("Old password incorrect.", attemptPath, attempts)
 		return
 	}
 
-	newSalt, err := securecrypto.GenerateSalt(consts.SALT_SIZE)
+	newSalt, err := securecrypto.GenerateSalt()
 	if err != nil {
 		utils.ErrorE(err)
 		return
 	}
 
-	_, newHash, err := securecrypto.HashWithSalt(newPassword, newSalt)
+	newHash, err := securecrypto.HashWithSalt(newPassword, newSalt)
 	if err != nil {
 		utils.ErrorE(err)
 		return
@@ -169,10 +165,7 @@ func ResetPassword(username, oldPassword, newPassword string, Event *events.Even
 		return
 	}
 
-	if err := db.Save(); err != nil {
-		utils.ErrorE(err)
-		return
-	}
+
 
 	_ = os.Remove(attemptPath)
 	utils.Done("Password reset successful.")

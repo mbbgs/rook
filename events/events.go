@@ -15,7 +15,7 @@ func Emitter() *Event {
 	return &Event{
 		mu:        sync.RWMutex{},
 		listeners: make(map[EventName]EventListener),
-		Username:  ""
+		Username:  "",
 	}
 }
 

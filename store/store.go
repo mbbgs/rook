@@ -42,8 +42,22 @@ func (s *Store) Close() error {
 
 // One-device-one-user logic
 func (s *Store) IsUser() (bool, error) {
-	return s.db.Has([]byte(userKey))
+	err := s.db.View(func(txn *badger.Txn) error {
+		_, err := txn.Get([]byte(userKey))
+		return err
+	})
+
+	if err == badger.ErrKeyNotFound {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
+
 
 func (s *Store) CreateUser(user *models.User) error {
 	exists, err := s.IsUser()

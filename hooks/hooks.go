@@ -56,7 +56,13 @@ func SetupEventHandlers() {
 	Event.On(consts.APP_READY, func(_ ...interface{}) {
 	utils.SilentDone(consts.APP_READY)
 	Event.Off(consts.APP_INIT)
-	loadStore := store.NewStore()
+	loadStore, err := store.NewStore()
+	
+	if err != nil {
+		utils.Error("Failed to check user existence: " + err.Error())
+		os.Exit(1)
+	}
+	
 	exists, err := loadStore.IsUser()
 	if err != nil {
 		utils.Error("Failed to check user existence: " + err.Error())
@@ -102,6 +108,7 @@ func SetupEventHandlers() {
 
 	Event.On(consts.DROP_TABLE, func(_ ...interface{}) {
 		username := strings.TrimSpace(Event.Username)
+		
 		if username == "" {
 			Event.Emit(consts.F_USER_LOGOUT,nil)
 			return
@@ -114,7 +121,7 @@ func SetupEventHandlers() {
 		utils.SilentDone(consts.USER_LOGIN)
 		Event.Off(consts.USER_LOGIN)
 		
-		dash, err := dashboard.NewDashboard(args[0],args[1])
+		dash := dashboard.NewDashboard(args[0],args[1])
 		//	if err != nil {
 		//	utils.Error("Failed to init dashboard: " + err.Error())
 		//	return

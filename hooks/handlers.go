@@ -111,7 +111,7 @@ func UserLogin(username, password string, Event *events.Event) {
 
 	_ = os.Remove(attemptPath)
 	utils.Done("User logged in successfully.")
-	Event.Username = us
+	Event.Username = username
 	Event.Emit(consts.USER_LOGGED_IN, &user, &db)
 }
 

@@ -1,9 +1,9 @@
 package store
 
 import (
-   "fmt"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"path/filepath"
 
 	"github.com/dgraph-io/badger/v4"
@@ -14,9 +14,10 @@ import (
 )
 
 type Store struct {
-    db *badger.DB
+	db *badger.DB
 }
 
+const userKey = "__user__"
 
 func NewStore() (*Store, error) {
 	dir, err := utils.GetSessionDir()
@@ -39,45 +40,32 @@ func (s *Store) Close() error {
 	return nil
 }
 
-
-
+// One-device-one-user logic
+func (s *Store) IsUser() (bool, error) {
+	return s.db.Has([]byte(userKey))
+}
 
 func (s *Store) CreateUser(user *models.User) error {
-	exists, _ := UserExists(s.db, user.Username)
+	exists, err := s.IsUser()
+	if err != nil {
+		return err
+	}
 	if exists {
-		return errors.New("username in use")
+		return errors.New("user already exists")
 	}
 	data, err := json.Marshal(user)
 	if err != nil {
 		return err
 	}
 	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set([]byte(user.Username), data)
+		return txn.Set([]byte(userKey), data)
 	})
 }
 
-func UserExists(db *badger.DB, username string) (bool, error) {
-	var exists bool
-	err := db.View(func(txn *badger.Txn) error {
-		_, err := txn.Get([]byte(username))
-		if err == nil {
-			exists = true
-			return nil
-		}
-		if err == badger.ErrKeyNotFound {
-			return nil
-		}
-		return err
-	})
-	return exists, err
-}
-
-
-
-func (s *Store) GetUser(username string) (*models.User, error) {
+func (s *Store) GetUser() (*models.User, error) {
 	var user models.User
 	err := s.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(username))
+		item, err := txn.Get([]byte(userKey))
 		if err != nil {
 			return err
 		}
@@ -89,7 +77,7 @@ func (s *Store) GetUser(username string) (*models.User, error) {
 }
 
 func (s *Store) UpdateUser(user *models.User) error {
-	exists, err := UserExists(s.db, user.Username)
+	exists, err := s.IsUser()
 	if err != nil {
 		return err
 	}
@@ -101,82 +89,96 @@ func (s *Store) UpdateUser(user *models.User) error {
 		return err
 	}
 	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set([]byte(user.Username), data)
+		return txn.Set([]byte(userKey), data)
 	})
 }
 
-func (s *Store) DeleteUser(username string) error {
+func (s *Store) DeleteUser() error {
 	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Delete([]byte(username))
+		return txn.Delete([]byte(userKey))
 	})
 }
 
+// Entry store logic (still uses username as part of key)
 func (s *Store) AddToStore(username string, label types.Label, data types.Data) error {
-    key := s.makeKey(username, label)
-    value, err := json.Marshal(data)
-    if err != nil {
-        return err
-    }
-    return s.db.Update(func(txn *badger.Txn) error {
-        return txn.Set([]byte(key), value)
-    })
+	key := s.makeKey(username, label)
+	value, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	return s.db.Update(func(txn *badger.Txn) error {
+		return txn.Set([]byte(key), value)
+	})
 }
 
 func (s *Store) GetByLabel(username string, label types.Label) (types.Data, error) {
-    var data types.Data
-    key := s.makeKey(username, label)
-    err := s.db.View(func(txn *badger.Txn) error {
-        item, err := txn.Get([]byte(key))
-        if err != nil {
-            return err
-        }
-        return item.Value(func(val []byte) error {
-            return json.Unmarshal(val, &data)
-        })
-    })
-    return data, err
+	var data types.Data
+	key := s.makeKey(username, label)
+	err := s.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte(key))
+		if err != nil {
+			return err
+		}
+		return item.Value(func(val []byte) error {
+			return json.Unmarshal(val, &data)
+		})
+	})
+	return data, err
 }
 
 func (s *Store) RemoveFromStore(username string, label types.Label) error {
-    key := s.makeKey(username, label)
-    return s.db.Update(func(txn *badger.Txn) error {
-        return txn.Delete([]byte(key))
-    })
+	key := s.makeKey(username, label)
+	return s.db.Update(func(txn *badger.Txn) error {
+		return txn.Delete([]byte(key))
+	})
 }
 
 func (s *Store) GetAllForUser(username string) (map[string]types.Data, error) {
-    result := make(map[string]types.Data)
-    prefix := []byte(username + ":")
-    err := s.db.View(func(txn *badger.Txn) error {
-        it := txn.NewIterator(badger.DefaultIteratorOptions)
-        defer it.Close()
+	result := make(map[string]types.Data)
+	prefix := []byte(username + ":")
+	err := s.db.View(func(txn *badger.Txn) error {
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer it.Close()
 
-        for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-            item := it.Item()
-            k := item.Key()
-            err := item.Value(func(val []byte) error {
-                var d types.Data
-                if err := json.Unmarshal(val, &d); err != nil {
-                    return err
-                }
-                label := string(k[len(prefix):])
-                result[label] = d
-                return nil
-            })
-            if err != nil {
-                return err
-            }
-        }
-        return nil
-    })
-    return result, err
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			err := item.Value(func(val []byte) error {
+				var d types.Data
+				if err := json.Unmarshal(val, &d); err != nil {
+					return err
+				}
+				label := string(k[len(prefix):])
+				result[label] = d
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return result, err
 }
 
-func (s *Store) makeKey(username string, label types.Label) string {
-    return username + ":" + string(label)
+func (s *Store) CountForUser(username string) (int, error) {
+	prefix := []byte(username + "::")
+	count := 0
+
+	err := s.db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			count++
+		}
+		return nil
+	})
+
+	return count, err
 }
-
-
 
 func (s *Store) Get(username, label string) ([]byte, error) {
 	var val []byte
@@ -194,22 +196,6 @@ func (s *Store) Get(username, label string) ([]byte, error) {
 	return val, err
 }
 
-
-func (s *Store) CountForUser(username string) (int, error) {
-	prefix := []byte(username + "::")
-	count := 0
-
-	err := s.db.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchValues = false // just for keys
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-			count++
-		}
-		return nil
-	})
-
-	return count, err
+func (s *Store) makeKey(username string, label types.Label) string {
+	return username + ":" + string(label)
 }

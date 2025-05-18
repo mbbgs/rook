@@ -1,7 +1,7 @@
 package store
 
 import (
-	"fmt"
+   "fmt"
 	"encoding/json"
 	"errors"
 	"path/filepath"
@@ -14,8 +14,9 @@ import (
 )
 
 type Store struct {
-	db *badger.DB
+    db *badger.DB
 }
+
 
 func NewStore() (*Store, error) {
 	dir, err := utils.GetSessionDir()
@@ -54,23 +55,6 @@ func (s *Store) CreateUser(user *models.User) error {
 		return txn.Set([]byte(user.Username), data)
 	})
 }
-
-func UserExists(db *badger.DB, username string) (bool, error) {
-	var exists bool
-	err := db.View(func(txn *badger.Txn) error {
-		_, err := txn.Get([]byte(username))
-		if err == nil {
-			exists = true
-			return nil
-		}
-		if err == badger.ErrKeyNotFound {
-			return nil
-		}
-		return err
-	})
-	return exists, err
-}
-
 
 
 func (s *Store) GetUser(username string) (*models.User, error) {
@@ -111,14 +95,72 @@ func (s *Store) DeleteUser(username string) error {
 }
 
 func (s *Store) AddToStore(username string, label types.Label, data types.Data) error {
-	encoded, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-	key := fmt.Sprintf("%s::%s", username, label)
-	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set([]byte(key), encoded)
-	})
+    key := s.makeKey(username, label)
+    value, err := json.Marshal(data)
+    if err != nil {
+        return err
+    }
+    return s.db.Update(func(txn *badger.Txn) error {
+        return txn.Set([]byte(key), value)
+    })
+}
+
+func (s *Store) GetByLabel(username string, label types.Label) (types.Data, error) {
+    var data types.Data
+    key := s.makeKey(username, label)
+    err := s.db.View(func(txn *badger.Txn) error {
+        item, err := txn.Get([]byte(key))
+        if err != nil {
+            return err
+        }
+        return item.Value(func(val []byte) error {
+            return json.Unmarshal(val, &data)
+        })
+    })
+    return data, err
+}
+
+func (s *Store) RemoveFromStore(username string, label types.Label) error {
+    key := s.makeKey(username, label)
+    return s.db.Update(func(txn *badger.Txn) error {
+        return txn.Delete([]byte(key))
+    })
+}
+
+func (s *Store) GetAllForUser(username string) (map[string]types.Data, error) {
+    result := make(map[string]types.Data)
+    prefix := []byte(username + ":")
+    err := s.db.View(func(txn *badger.Txn) error {
+        it := txn.NewIterator(badger.DefaultIteratorOptions)
+        defer it.Close()
+
+        for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+            item := it.Item()
+            k := item.Key()
+            err := item.Value(func(val []byte) error {
+                var d types.Data
+                if err := json.Unmarshal(val, &d); err != nil {
+                    return err
+                }
+                label := string(k[len(prefix):])
+                result[label] = d
+                return nil
+            })
+            if err != nil {
+                return err
+            }
+        }
+        return nil
+    })
+    return result, err
+}
+
+func (s *Store) makeKey(username string, label types.Label) string {
+    return username + ":" + string(label)
+}
+
+func (s *Store) IsUser() (bool, error) {
+	return s.db.Has([]byte("__user__"))
 }
 
 func (s *Store) Get(username, label string) ([]byte, error) {
@@ -137,12 +179,6 @@ func (s *Store) Get(username, label string) ([]byte, error) {
 	return val, err
 }
 
-func (s *Store) RemoveFromStore(username string, label types.Label) error {
-	key := fmt.Sprintf("%s::%s", username, label)
-	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Delete([]byte(key))
-	})
-}
 
 func (s *Store) CountForUser(username string) (int, error) {
 	prefix := []byte(username + "::")
@@ -161,34 +197,4 @@ func (s *Store) CountForUser(username string) (int, error) {
 	})
 
 	return count, err
-}
-
-
-func (s *Store) GetAllForUser(username string) ([]types.Data, error) {
-	prefix := []byte(username + "::")
-	var results []types.Data
-
-	err := s.db.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchValues = true
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-			item := it.Item()
-			err := item.Value(func(v []byte) error {
-				var data types.Data
-				if err := json.Unmarshal(v, &data); err != nil {
-					return err
-				}
-				results = append(results, data)
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	return results, err
 }

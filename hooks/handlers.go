@@ -60,7 +60,7 @@ func UserRegistration(username, password, masterkey string, Event *events.Event)
 	}
 	defer db.Close()
 
-	if err := db.CreaterUser(newUser); err != nil {
+	if err := db.CreateUser(newUser); err != nil {
 		utils.ErrorE(err)
 		return
 	}
@@ -107,6 +107,8 @@ func UserLogin(username, password string, Event *events.Event) {
 
 	_ = os.Remove(attemptPath)
 	utils.Done("User logged in successfully.")
+	
+	Event.Username = username
 	Event.Emit(consts.USER_LOGGED_IN, &user, &db)
 }
 
@@ -205,7 +207,7 @@ func DropStorage(username, currentPassword string) {
 		return
 	}
 
-	_, checkHash, err := securecrypto.HashWithSalt(currentPassword, []byte(salt))
+	checkHash, err := securecrypto.HashWithSalt(currentPassword,salt)
 	if err != nil || !bytes.Equal([]byte(storedHash), []byte(checkHash)) {
 		failAttempt("Invalid password.", attemptPath, attempts)
 		return

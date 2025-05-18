@@ -6,6 +6,7 @@ type EventName string
 type EventListener func(...interface{})
 
 type Event struct {
+	Username	string
 	mu        sync.RWMutex
 	listeners map[EventName]EventListener
 }
@@ -14,6 +15,7 @@ func Emitter() *Event {
 	return &Event{
 		mu:        sync.RWMutex{},
 		listeners: make(map[EventName]EventListener),
+		Username:  ""
 	}
 }
 

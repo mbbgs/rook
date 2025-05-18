@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-
+  "github.com/dgraph-io/badger/v4/options"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/mbbgs/rook/consts"
 	"github.com/mbbgs/rook/models"
@@ -19,6 +19,7 @@ type Store struct {
 
 const userKey = "__user__"
 
+/**
 func NewStore() (*Store, error) {
 	dir, err := utils.GetSessionDir()
 	if err != nil {
@@ -31,6 +32,34 @@ func NewStore() (*Store, error) {
 		return nil, err
 	}
 	return &Store{db: db}, nil
+}
+**/
+
+
+func NewStore() (*Store, error) {
+    dir, err := utils.GetSessionDir()
+    if err != nil {
+        return nil, err
+    }
+
+    path := filepath.Join(dir, consts.STORE_FILE_PATH)
+
+    opts := badger.DefaultOptions(path).
+        WithValueLogFileSize(8 << 20).                      // 8MB log chunks
+        WithTableLoadingMode(options.FileIO).               // avoid mmap
+        WithValueLogLoadingMode(options.FileIO).            // avoid mmap
+        WithNumMemtables(1).
+        WithNumLevelZeroTables(1).
+        WithMaxTableSize(1 << 20).                          // 1MB SST tables
+        WithTruncate(true).
+        WithLogger(nil)
+
+    db, err := badger.Open(opts)
+    if err != nil {
+        return nil, err
+    }
+
+    return &Store{db: db}, nil
 }
 
 func (s *Store) Close() error {

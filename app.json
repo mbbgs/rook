@@ -4,7 +4,7 @@
   "version_name": "rookling",
   "description": "A secure password vault that stores encrypted credentials using AES-GCM with integrity verification.",
   "author": "Mockingbugs (Mbbgs)",
-  "license": "MIT",
+  "license": "GNU",
   "repository": "https://github.com/mbbgs/rook",
   "security": {
     "encryption": "AES-256-GCM",
